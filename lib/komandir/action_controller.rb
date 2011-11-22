@@ -5,6 +5,7 @@ module Komandir
     end
 
     module InstanceMethods
+      # TODO Переделать user в параметрах через @current_user
       def action_signature_valid?(user)
         raise "Blank komandir_random_text" if params[:komandir_random_text].blank?
         raise "Blank komandir_signature" if params[:komandir_signature].blank?
