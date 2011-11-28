@@ -1,10 +1,13 @@
 module Komandir
+  class WrongTime < Exception; end
+
   module ControllerMethods
 
     module ClassMethods
     end
 
     module InstanceMethods
+
       # TODO Переделать user в параметрах через @current_user
       def action_signature_valid?(user)
         raise "Blank komandir_signature" if params[:komandir_signature].blank?
@@ -49,7 +52,7 @@ module Komandir
           if params[:komandir_time].present?
             server_time_epoch = Time.now.to_i
             client_time_epoch = params[:komandir_time].to_i
-            raise "Время в подписи неверное" if (client_time_epoch - server_time_epoch).abs > 60
+            raise Komandir::WrongTime if (client_time_epoch - server_time_epoch).abs > 60
           end
         end
     end
