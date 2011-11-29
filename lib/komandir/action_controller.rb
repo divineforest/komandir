@@ -1,6 +1,4 @@
 module Komandir
-  class WrongTime < Exception; end
-
   module ControllerMethods
 
     module ClassMethods
@@ -13,19 +11,18 @@ module Komandir
         raise "Blank komandir_signature" if params[:komandir_signature].blank?
         raise "Blank certificate for user. Make sure user.certificate.body contains certificate" unless user.certificate.try(:body?)
 
-        verification_set = {
-          :message => digest,
-          :signature => params[:komandir_signature],
-          :certificate => user.certificate.body
-        }
-        Cryptopro::Signature.verify(verification_set)
+        protocol = Protocol.new(
+          :user => user,
+          :action_url => request.path,
+          :client_ip => request.remote_ip,
+          :client_time => params[:komandir_time],
+          :body => serialized_form,
+          :signature => params[:komandir_signature]
+        )
+        protocol.save
       end
 
       private
-
-        def digest
-          "#{system_params}:#{serialized_form}"
-        end
 
         def serialized_form
           # TODO Сортировать по алфавиту
@@ -40,19 +37,6 @@ module Komandir
           pair_strings.reject do |pair_string|
             param_name = pair_string.split("=").first
             odd_param_names.include?(param_name) || filtered_param_names.any? { |filtered_param_name| param_name.include?(filtered_param_name) }
-          end
-        end
-
-        def system_params
-          check_client_time!
-          "#{request.path}:#{request.remote_ip}:#{params[:komandir_time]}"
-        end
-
-        def check_client_time!
-          if params[:komandir_time].present?
-            server_time_epoch = Time.now.to_i
-            client_time_epoch = params[:komandir_time].to_i
-            raise Komandir::WrongTime if (client_time_epoch - server_time_epoch).abs > 60
           end
         end
     end
