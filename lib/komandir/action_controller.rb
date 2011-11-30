@@ -15,10 +15,11 @@ module Komandir
           :user => user,
           :action_url => request.path,
           :client_ip => request.remote_ip,
-          :client_time => params[:komandir_time],
+          :client_time_epoch => params[:komandir_time],
           :body => serialized_form,
           :signature => params[:komandir_signature]
         )
+
         protocol.save
       end
 

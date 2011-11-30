@@ -1,12 +1,12 @@
 class Protocol < ActiveRecord::Base
 
-  class WrongTime < Exception; end
-
   belongs_to :user
 
-  before_create :validate_signature
+  validate :validate_signature
 
-  # Options:
+  attr_accessor :client_time_epoch
+
+  # TODO: Validate:
   #   user_id
   #   action_url
   #   client_ip
@@ -22,7 +22,9 @@ class Protocol < ActiveRecord::Base
           :signature => signature,
           :certificate => user.certificate.body
         }
-        errors[:base] << "Signature not valid" unless Cryptopro::Signature.verify(verification_set)
+        unless Cryptopro::Signature.verify(verification_set)
+          errors.add(:signature, "Signature not valid")
+        end
       end
 
       def digest
@@ -31,14 +33,14 @@ class Protocol < ActiveRecord::Base
 
       def system_params
         check_client_time!
-        "#{action_url}:#{client_ip}:#{client_time}"
+        "#{action_url}:#{client_ip}:#{client_time_epoch}"
       end
 
       def check_client_time!
-        if client_time?
+        if client_time_epoch.present?
           server_time_epoch = Time.now.to_i
-          client_time_epoch = client_time.to_i
-          raise WrongTime if (client_time_epoch - server_time_epoch).abs > 60
+          self.client_time_epoch = client_time_epoch.to_i
+          raise Komandir::WrongTime if (client_time_epoch - server_time_epoch).abs > 60
         end
       end
 
