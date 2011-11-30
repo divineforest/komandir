@@ -2,19 +2,36 @@ class Protocol < ActiveRecord::Base
 
   belongs_to :user
 
+  before_validation :set_client_time, :on => :create
+  before_validation :set_account_name, :on => :create
+  before_validation :set_certificate, :on => :create
+
+  validates :action_url, :presence => true
+  validates :client_time_epoch, :presence => true
+  validates :client_time, :presence => true
+  validates :client_ip, :presence => true
+  validates :body, :presence => true
+  validates :signature, :presence => true
+  validates :account_name, :presence => true
   validate :validate_signature
 
   attr_accessor :client_time_epoch
 
-  # TODO: Validate:
-  #   user_id
-  #   action_url
-  #   client_ip
-  #   client_time
-  #   body
-  #   signature
-
     private
+
+      def set_client_time
+        self.client_time = Time.at(client_time_epoch.to_i)
+      end
+
+      def set_account_name
+        if user.respond_to?(:email)
+          self.account_name = user.email
+        end
+      end
+
+      def set_certificate
+        self.certificate_id = user.certificate.id
+      end
 
       def validate_signature
         verification_set = {
